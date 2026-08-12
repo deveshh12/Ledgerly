@@ -1,5 +1,4 @@
 const userModel = require('../models/user.model');
-const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 /*
   Controller function to handle user registration
