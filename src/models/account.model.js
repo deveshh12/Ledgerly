@@ -8,10 +8,14 @@ const accountSchema = new mongoose.Schema({
     index: true,
   },
   status: {
+    type: String,
     enum:{
         values: ['Active', 'Frozen', 'Inactive'],
-        message: 'Invalid status'
-    }
+        message: 'Invalid status',
+        
+    },
+    default: 'Active',
+    
   },
   currency: {
     type: String,
