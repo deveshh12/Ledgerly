@@ -17,12 +17,13 @@ connectDB();
 
 const authRouter = require("./routes/auth.routes.js");
 const accountRouter = require("./routes/account.route.js");
-
+const transactionRouter = require("./routes/transaction.routes.js");
 /*
     Use Routes
 */
 
 app.use("/api/auth", authRouter);
 app.use("/api/accounts", accountRouter);
+app.use("/api/transactions", transactionRouter);
 
 module.exports = app;

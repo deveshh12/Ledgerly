@@ -88,8 +88,103 @@ The Ledgerly Team`;
   await sendEmail(userEmail, subject, text, html);
 }
 
+async function sendTransactionEmail(userEmail, name, amount, toAccount) {
+  const subject = 'Transaction Successful';
+
+  const text = `Hi ${name},
+
+  Your transaction has been successfully completed.
+
+  Amount: ₹${amount}
+  To Account: ${toAccount}
+
+  Thank you for using Ledgerly.
+  `;
+
+    const html = `
+      <h2>Transaction Successful</h2>
+      <p>Hi ${name},</p>
+      <p>Your transaction has been successfully completed.</p>
+
+      <p><strong>Amount:</strong> ₹${amount}</p>
+      <p><strong>To Account:</strong> ${toAccount}</p>
+
+      <p>Thank you for using <strong>Ledgerly</strong>.</p>
+    `;
+
+    // Nodemailer transporter
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: userEmail,
+      subject,
+      text,
+      html
+    });
+}
+
+
+async function sendTransactionFailedEmail(userEmail, name, amount, toAccount) {
+  const subject = 'Transaction Failed';
+
+  const text = `Hi ${name},
+
+Unfortunately, your transaction could not be completed.
+
+Transaction Details:
+Amount: ₹${amount}
+To Account: ${toAccount}
+
+
+Please verify the transaction details and try again.
+
+If you did not attempt this transaction, please contact Ledgerly support immediately.
+
+Thank you,
+Ledgerly Team
+`;
+
+  const html = `
+    <h2>Transaction Failed</h2>
+
+    <p>Hi ${name},</p>
+
+    <p>
+      Unfortunately, your transaction could not be completed.
+    </p>
+
+    <h3>Transaction Details</h3>
+
+    <p><strong>Amount:</strong> ₹${amount}</p>
+    <p><strong>To Account:</strong> ${toAccount}</p>
+    
+
+    <p>
+      Please verify the transaction details and try again.
+    </p>
+
+    <p>
+      If you did not attempt this transaction, please contact
+      <strong>Ledgerly Support</strong> immediately.
+    </p>
+
+    <p>Thank you,<br><strong>Ledgerly Team</strong></p>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: userEmail,
+    subject,
+    text,
+    html
+  });
+}
+
+
+
 module.exports = {
   sendEmail,
-  sendRegistrationEmail
+  sendRegistrationEmail,
+  sendTransactionEmail,
+  sendTransactionFailedEmail
 };
 
