@@ -31,8 +31,8 @@ async function createTransaction(req, res){
         })
     }
 
-    const fromUserAccount = await accountModel.findOne({_id : fromAccount})
-    const toUserAccount = await accountModel.findOne({_id: toAccount})
+    const fromUserAccount = await accountModel.findOne({_id : fromAccount}).populate('user');
+    const toUserAccount = await accountModel.findOne({_id: toAccount}).populate('user');
 
     if(!fromUserAccount || !toUserAccount){
         return res.status(400).json({
@@ -50,7 +50,7 @@ async function createTransaction(req, res){
                 transaction: isTransactionAlreadyExists
             })
         }
-        if(isTransactionAlreadyExists === "pending"){
+        if(isTransactionAlreadyExists.status === "pending"){
             return res.status(200).json({
                 message: "Transaction is still processing"
             })
@@ -93,27 +93,27 @@ async function createTransaction(req, res){
         idempotencyKey,
         status: "pending"
     }, { session });
-    const debitLedgerEntry = await ledgerModel.create({
+    const debitLedgerEntry = await ledgerModel.create([{
         account: fromAccount,
-        transactionId: transaction._id,
-        amount: -amount,
-        type: "debit"
-    }, { session });
-
-    const creditLedgerEntry = await ledgerModel.create({
-        accountId: toAccount,
-        transactionId: transaction._id,
+        transaction: transaction._id,
         amount: amount,
-        type: "credit"
-    }, { session });
+        type: "DEBIT"
+    }], { session });
+
+    const creditLedgerEntry = await ledgerModel.create([{
+        account: toAccount,
+        transaction: transaction._id,
+        amount: amount,
+        type: "CREDIT"
+    }], { session });
     transaction.status = "completed"
     await transaction.save({ session });
     await session.commitTransaction();
     session.endSession();
 
     // 10. Send email notification
-    emailService.sendTransactionDebitEmail(fromUserAccount.user, fromUserAccount.name, amount, toUserAccount.name)
-    emailService.sendTransactionCreditEmail(toUserAccount.user, toUserAccount.name, amount, fromUserAccount.name)
+    emailService.sendTransactionDebitEmail(fromUserAccount.user.email, fromUserAccount.user.name, amount, toUserAccount.user.name);
+    emailService.sendTransactionCreditEmail(toUserAccount.user.email, toUserAccount.user.name, amount, fromUserAccount.user.name);
 
     return res.status(200).json({
         message: "Transaction processed successfully",
