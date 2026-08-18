@@ -88,7 +88,7 @@ The Ledgerly Team`;
   await sendEmail(userEmail, subject, text, html);
 }
 
-async function sendTransactionEmail(userEmail, name, amount, toAccount) {
+async function sendTransactionDebitEmail(userEmail, name, amount, toAccount) {
   const subject = 'Transaction Successful';
 
   const text = `Hi ${name},
@@ -122,6 +122,41 @@ async function sendTransactionEmail(userEmail, name, amount, toAccount) {
     });
 }
 
+async function sendTransactionCreditEmail(userEmail, name, amount, fromAccount) {
+  const subject = 'Transaction Credit Successful';
+
+  const text = `Hi ${name},
+
+  A transaction has been successfully credited to your Ledgerly account.
+
+  Amount Credited: ₹${amount}
+  From Account: ${fromAccount}
+
+  Thank you for using Ledgerly.
+  `;
+
+  const html = `
+    <h2>Transaction Credit Successful</h2>
+    <p>Hi ${name},</p>
+
+    <p>
+      A transaction has been successfully credited to your Ledgerly account.
+    </p>
+
+    <p><strong>Amount Credited:</strong> ₹${amount}</p>
+    <p><strong>From Account:</strong> ${fromAccount}</p>
+
+    <p>Thank you for using <strong>Ledgerly</strong>.</p>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: userEmail,
+    subject,
+    text,
+    html
+  });
+}
 
 async function sendTransactionFailedEmail(userEmail, name, amount, toAccount) {
   const subject = 'Transaction Failed';
@@ -184,7 +219,8 @@ Ledgerly Team
 module.exports = {
   sendEmail,
   sendRegistrationEmail,
-  sendTransactionEmail,
+  sendTransactionDebitEmail,
+  sendTransactionCreditEmail,
   sendTransactionFailedEmail
 };
 

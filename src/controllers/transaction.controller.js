@@ -2,7 +2,7 @@ const transactionModel = require('../models/transaction.model');
 const ledgerModel = require('../models/ledger.model');
 const emailService = require('../services/email.service')
 const accountModel = require('../models/account.model')
-
+const mongoose = require('mongoose');
 
 /*
 
@@ -75,11 +75,50 @@ async function createTransaction(req, res){
     }
 
     // 4. Derive sender balance from ledger
-    const senderBalance = await ledgerModel.aggregate([
-        { $match: { accountId: fromAccount } },
-        { $group: { _id: null, total: { $sum: "$amount" } } }
-    ]);
+    const balance = await fromUserAccount.getBalance()
 
+    if(balance < amount){
+        return res.status(400).json({
+            message: `Insufficient balance to process transaction. Available balance: ${balance}`
+        })
+    }
+
+    // 5. Create Transaction (PENDING)
+    const session = await transactionModel.startSession();
+    session.startTransaction();
+    const transaction = await transactionModel.create({
+        fromAccount,
+        toAccount,
+        amount,
+        idempotencyKey,
+        status: "pending"
+    }, { session });
+    const debitLedgerEntry = await ledgerModel.create({
+        account: fromAccount,
+        transactionId: transaction._id,
+        amount: -amount,
+        type: "debit"
+    }, { session });
+
+    const creditLedgerEntry = await ledgerModel.create({
+        accountId: toAccount,
+        transactionId: transaction._id,
+        amount: amount,
+        type: "credit"
+    }, { session });
+    transaction.status = "completed"
+    await transaction.save({ session });
+    await session.commitTransaction();
+    session.endSession();
+
+    // 10. Send email notification
+    emailService.sendTransactionDebitEmail(fromUserAccount.user, fromUserAccount.name, amount, toUserAccount.name)
+    emailService.sendTransactionCreditEmail(toUserAccount.user, toUserAccount.name, amount, fromUserAccount.name)
+
+    return res.status(200).json({
+        message: "Transaction processed successfully",
+        transaction
+    })
 }
 
 module.exports = {
